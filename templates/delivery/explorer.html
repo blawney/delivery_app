@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static from staticfiles %}
+{% block extra_head %}
+<link href="{% static "css/explorer.css" %}" rel="stylesheet">
+{% endblock %}
+{% block body_content %}
+        <body>
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+                <div class="container-fluid">
+                        <div class="navbar-header">
+                                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                                        <span class="sr-only">Toggle navigation</span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                </button>
+                                <a class="navbar-brand" href="#">CCCB Sequencing Delivery</a>
+                        </div>
+                        <div id="navbar" class="navbar-collapse collapse">
+                                <ul class="nav navbar-nav navbar-right">
+                                        {% if picture %}
+                                        <li><img id="profile-pic" class="profile-pic" src="{{picture}}"/></li>
+                                        {% endif %}
+                                        <li><a href="#" id="email-header">{{user.email}}</a></li>
+                                </ul>
+                        </div>
+                </div>
+        </nav>
+    <div class="container-fluid">
+        <div class="row">
+                        <div class="col-md-9">
+                                <div id="selector-panel" class="panel panel-default">
+                                        <div class="panel-heading">
+                                                <h4><strong class="">Your sequencing projects</strong></h4>
+                                        </div>
+                                        <div id="tree">
+                                        </div>
+                                        <div id="msg-div">
+                                                {% if error_msg %}{{error_msg}}{% endif %}
+                                        </div>
+                                        <h4><span class="msg-header">If you have any problems, issues, or comments, please contact the CCCB staff at cccb@jimmy.harvard.edu<span></h4>
+                                </div>
+                        </div>
+        </div>
+    </div>
+        <script>
+                function getTree() {
+                  var treedata = {{tree|safe}};
+                  return treedata;
+                };
+                $('#tree').treeview(
+                                                {
+                                                        data: getTree(), 
+                                                        enableLinks:true, 
+                                                        //multiSelect: true,
+                                                        targetFrame:"main-panel"
+                                                        //showCheckbox: true
+                                                });
+        </script>
+  </body>
+{% endblock %}
