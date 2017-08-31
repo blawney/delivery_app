@@ -26,3 +26,19 @@ class Resource(models.Model):
 	public_link = models.CharField(max_length=1000)
 	resource_type = models.ForeignKey(ResourceType)
 	upload_date = models.DateTimeField(blank=True, null=True)
+
+
+class DropboxTransferMaster(models.Model):
+	owner = models.ForeignKey(User, default=None)
+	start_time = models.DateTimeField(blank=True, null=True)
+	name = models.CharField(max_length=500, default='', blank=True)
+
+	def __str__(self):
+		 return '%s' % self.name
+
+class DropboxFileTransfer(models.Model):
+	master = models.ForeignKey(DropboxTransferMaster, null=True, blank=True)
+	start_time = models.DateTimeField(blank=True, null=True)
+	finish_time = models.DateTimeField(blank=True, null=True)
+	is_complete = models.BooleanField(default=False)
+	source = models.CharField(max_length = 500, default='')

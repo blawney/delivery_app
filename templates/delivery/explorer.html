@@ -28,7 +28,7 @@
         </nav>
     <div class="container-fluid">
         <div class="row">
-                        <div class="col-md-9">
+                        <div class="col-md-8">
                                 <div id="selector-panel" class="panel panel-default">
                                         <div class="panel-heading">
                                                 <h4><strong class="">Your sequencing projects</strong></h4>
@@ -38,24 +38,105 @@
                                         <div id="msg-div">
                                                 {% if error_msg %}{{error_msg}}{% endif %}
                                         </div>
-                                        <h4><span class="msg-header">If you have any problems, issues, or comments, please contact the CCCB staff at cccb@jimmy.harvard.edu<span></h4>
+                                        <h4><span class="msg-header">If you have any problems, issues, or comments, please contact the CCCB staff at <a href="mailto:cccb@jimmy.harvard.edu">cccb@jimmy.harvard.edu</a><span></h4>
                                 </div>
                         </div>
+                        <div class="col-md-4">
+                                <div id="methods-panel" class="panel panel-default">
+                                        <div class="panel-heading">
+                                                <h4><strong class="">Instructions</strong></h4>
+                                        </div>
+					<div class="content">
+						<p>Download individual files by clicking on the links directly.</p>
+						<p>For easier/faster download, we also offer transfer to Dropbox.  Select files with the checkboxes and then initiate the transfer by clicking
+							the button below.  You will then have to approve and log into the Dropbox account of your choice.
+						</p>
+						<p>Transfer to my <input id="dropbox-transfer-button" type="button"></p>
+					</div>
+				</div>
+			</div>
+
         </div>
     </div>
         <script>
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+		var transferToDropboxButton = document.getElementById('dropbox-transfer-button');
+		transferToDropboxButton.addEventListener('click', function(e){
+			var xhr = new XMLHttpRequest();
+			xhr.open("POST", "/dbx-file-register/");
+			var csrftoken = getCookie('csrftoken');
+			xhr.setRequestHeader("X-CSRFToken", csrftoken);
+			xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+			// now get the checked nodes, so we can let the backend know which files to transfer               
+			var theTree = $('#tree');
+			console.log(theTree);
+			var selectedNodes = theTree.treeview('getChecked');
+			console.log(selectedNodes);
+			var link_array = [];
+			for(var i=0; i<selectedNodes.length; i++){
+				var node = selectedNodes[i];
+				link_array.push(node.href);
+			}
+			console.log(link_array)
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 4) {
+					if (xhr.status === 200) {
+						console.log('dropbox transfer good');
+						window.open("https://cccb-delivery.tm4.org/dbx/", "newWindow", "width=800,height=600");
+						console.log('here???');
+					}
+				}
+			}
+			var data = {}
+			data['links'] = link_array; 
+			console.log(data);
+			xhr.send("data="+JSON.stringify(link_array));
+		});
+
                 function getTree() {
                   var treedata = {{tree|safe}};
                   return treedata;
                 };
-                $('#tree').treeview(
+		var theTree = $('#tree');
+                theTree.treeview(
                                                 {
                                                         data: getTree(), 
                                                         enableLinks:true, 
-                                                        //multiSelect: true,
-                                                        targetFrame:"main-panel"
-                                                        //showCheckbox: true
+                                                        multiSelect: true,
+                                                        targetFrame:"main-panel",
+                                                        showCheckbox: true
                                                 });
+		theTree.on('nodeChecked', function(event, data) {
+			var childNodes = data['nodes'];
+			if(childNodes !== undefined){
+				for(var i=0; i<childNodes.length; i++){
+					theTree.treeview('checkNode', childNodes[i].nodeId);
+				}
+			}
+		});
+                theTree.on('nodeUnchecked', function(event, data) {
+                        var childNodes = data['nodes'];
+                        if(childNodes !== undefined){
+                                for(var i=0; i<childNodes.length; i++){
+                                        theTree.treeview('uncheckNode', childNodes[i].nodeId);
+                                }
+                        }
+                });
         </script>
   </body>
 {% endblock %}

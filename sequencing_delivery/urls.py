@@ -26,5 +26,9 @@ urlpatterns = [
     url(r'^unauthorized/', views.unauthorized, name='unauthorized'),
     url(r'^$', views.default_home),
     url(r'^explorer/', include('delivery.urls')),
-    url(r'^update/', views.update_db)
+    url(r'^update/', views.update_db),
+    url(r'^dbx/', views.dropbox_auth),
+    url(r'^dbx-callback/', views.dropbox_callback),
+    url(r'dbx-file-register', views.register_files_to_transfer),
+    url(r'dropbox-transfer-complete', views.dropbox_transfer_complete),
 ]

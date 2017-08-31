@@ -3,20 +3,28 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from models import Bucket, Resource, ResourceType
+from models import Bucket, Resource, ResourceType, DropboxTransferMaster, DropboxFileTransfer
 
 class ResourceTypeAdmin(admin.ModelAdmin):
 	list_display = ('display_name','filename_suffix')
 	list_editable = ('filename_suffix',)
 
 class ResourceAdmin(admin.ModelAdmin):
-	list_display = ('bucket', 'basename','public_link','resource_type')
+	list_display = ('bucket', 'basename','public_link','resource_type', 'upload_date')
 	list_editable = ('resource_type',)
 
 class BucketAdmin(admin.ModelAdmin):
 	list_display = ('name',)
-	#list_editable = ('name',)
+
+class DropboxTransferMasterAdmin(admin.ModelAdmin):
+	list_display = ('start_time','name', 'owner')
+	list_editable = ('name',)
+
+class DropboxFileTransferAdmin(admin.ModelAdmin):
+	list_display = ('master', 'source', 'is_complete')
 
 admin.site.register(Bucket, BucketAdmin)
 admin.site.register(Resource, ResourceAdmin)
 admin.site.register(ResourceType, ResourceTypeAdmin)
+admin.site.register(DropboxTransferMaster, DropboxTransferMasterAdmin)
+admin.site.register(DropboxFileTransfer, DropboxFileTransferAdmin)

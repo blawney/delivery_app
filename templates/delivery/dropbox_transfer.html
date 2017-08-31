@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static from staticfiles %}
+{% block extra_head %}
+<link href="{% static "css/dropbox.css" %}" rel="stylesheet">
+{% endblock %}
+{% block body_content %}
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+                <div class="container-fluid">
+                        <div class="navbar-header">
+                                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                                        <span class="sr-only">Toggle navigation</span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                </button>
+                                <a class="navbar-brand" href="#">CCCB Sequencing Delivery</a>
+                        </div>
+                        <div id="navbar" class="navbar-collapse collapse">
+                                <ul class="nav navbar-nav navbar-right">
+                                        {% if picture %}
+                                        <li><img id="profile-pic" class="profile-pic" src="{{picture}}"/></li>
+                                        {% endif %}
+                                        <li><a href="#" id="email-header">{{user.email}}</a></li>
+                                </ul>
+                        </div>
+                </div>
+        </nav>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-8">
+				<p>Your transfer has started.  You will receive an email upon completion, or if there was a problem with the transfer.</p>
+				{% if transferred_files|length > 0 %}
+				<p>The following files are being transferred:</p>
+				<ul>
+				{% for f in transferred_files %}
+					<li>{{f}}</li>
+				{% endfor %}
+				</ul>
+				{% endif %}
+				{% if skipped_files|length > 0 %}
+				<p>The following files were skipped due to lack of space in your Dropbox:</p>
+				<ul>
+				{% for f in skipped_files %}
+					<li>{{f}}</li>
+				{% endfor %}
+				</ul>
+				{% endif %}
+<button class="btn btn-default" onclick="self.close()">Close window</button>
+               </div>
+          </div>
+        </div>
+  </body>
+{% endblock %}
