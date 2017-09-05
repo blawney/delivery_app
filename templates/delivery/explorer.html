@@ -88,9 +88,18 @@ function getCookie(name) {
 			var selectedNodes = theTree.treeview('getChecked');
 			console.log(selectedNodes);
 			var link_array = [];
+			console.log('am i here?');
 			for(var i=0; i<selectedNodes.length; i++){
+				console.log('item ' + i);
 				var node = selectedNodes[i];
-				link_array.push(node.href);
+				console.log(node.href)
+				if (typeof node.href != 'undefined'){
+					console.log('should be pushed')
+					link_array.push(node.href);
+				}else{
+					console.log('was undefined');
+				}
+				console.log('*******');
 			}
 			console.log(link_array)
 			xhr.onreadystatechange = function() {
