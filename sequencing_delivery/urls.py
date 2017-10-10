@@ -16,7 +16,7 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 
-import views
+import views, dropbox_utils
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -27,8 +27,8 @@ urlpatterns = [
     url(r'^$', views.default_home),
     url(r'^explorer/', include('delivery.urls')),
     url(r'^update/', views.update_db),
-    url(r'^dbx/', views.dropbox_auth),
-    url(r'^dbx-callback/', views.dropbox_callback),
-    url(r'dbx-file-register', views.register_files_to_transfer),
-    url(r'dropbox-transfer-complete', views.dropbox_transfer_complete),
+    url(r'^dbx/', dropbox_utils.dropbox_auth),
+    url(r'^dbx-callback/', dropbox_utils.dropbox_callback),
+    url(r'dbx-file-register', dropbox_utils.register_files_to_transfer),
+    url(r'dropbox-transfer-complete', dropbox_utils.dropbox_transfer_complete),
 ]

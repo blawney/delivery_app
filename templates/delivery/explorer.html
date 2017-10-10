@@ -51,7 +51,7 @@
 						<p>For easier/faster download, we also offer transfer to Dropbox.  Select files with the checkboxes and then initiate the transfer by clicking
 							the button below.  You will then have to approve and log into the Dropbox account of your choice.
 						</p>
-						<p>Transfer to my <input id="dropbox-transfer-button" type="button"></p>
+						<p><strong>Transfer to my</strong><br/><input id="dropbox-transfer-button" type="button"></p>
 					</div>
 				</div>
 			</div>
@@ -84,36 +84,24 @@ function getCookie(name) {
 			xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 			// now get the checked nodes, so we can let the backend know which files to transfer               
 			var theTree = $('#tree');
-			console.log(theTree);
 			var selectedNodes = theTree.treeview('getChecked');
 			console.log(selectedNodes);
 			var link_array = [];
-			console.log('am i here?');
 			for(var i=0; i<selectedNodes.length; i++){
-				console.log('item ' + i);
 				var node = selectedNodes[i];
-				console.log(node.href)
 				if (typeof node.href != 'undefined'){
-					console.log('should be pushed')
 					link_array.push(node.href);
-				}else{
-					console.log('was undefined');
 				}
-				console.log('*******');
 			}
-			console.log(link_array)
 			xhr.onreadystatechange = function() {
 				if (xhr.readyState === 4) {
 					if (xhr.status === 200) {
-						console.log('dropbox transfer good');
 						window.open("https://cccb-delivery.tm4.org/dbx/", "newWindow", "width=800,height=600");
-						console.log('here???');
 					}
 				}
 			}
 			var data = {}
 			data['links'] = link_array; 
-			console.log(data);
 			xhr.send("data="+JSON.stringify(link_array));
 		});
 

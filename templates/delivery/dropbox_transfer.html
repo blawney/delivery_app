@@ -29,8 +29,8 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-8">
-				<p>Your transfer has started.  You will receive an email upon completion, or if there was a problem with the transfer.</p>
 				{% if transferred_files|length > 0 %}
+				<p>Your transfer has started.  You will receive an email upon completion, or if there was a problem with the transfer.</p>
 				<p>The following files are being transferred:</p>
 				<ul>
 				{% for f in transferred_files %}
@@ -38,6 +38,7 @@
 				{% endfor %}
 				</ul>
 				{% endif %}
+
 				{% if skipped_files|length > 0 %}
 				<p>The following files were skipped due to lack of space in your Dropbox:</p>
 				<ul>
@@ -46,6 +47,25 @@
 				{% endfor %}
 				</ul>
 				{% endif %}
+
+				{% if previously_completed_transfer_file_list|length > 0 %}
+				<p>The following files were skipped since they were already downloaded:</p>
+				<ul>
+				{% for f in previously_completed_transfer_file_list %}
+					<li>{{f}}</li>
+				{% endfor %}
+				</ul>
+				{% endif %}
+
+				{% if ongoing_transfer_list|length > 0 %}
+				<p>The following files were skipped since they are currently in the transfer process:</p>
+				<ul>
+				{% for f in ongoing_transfer_list %}
+					<li>{{f}}</li>
+				{% endfor %}
+				</ul>
+				{% endif %}
+
 <button class="btn btn-default" onclick="self.close()">Close window</button>
                </div>
           </div>

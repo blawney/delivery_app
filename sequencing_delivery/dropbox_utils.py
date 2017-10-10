@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.abspath('..'))
 import email_utils
 sys.path.append(os.path.abspath('../delivery'))
-from delivery.models import Bucket, Resource, ResourceType, DropboxTransferMaster, DropboxFileTransfer
+from delivery.models import Bucket, Resource, ResourceType, DropboxTransferMaster, DropboxFileTransfer, ResourceDownload
 
 from google.cloud import storage
 import googleapiclient.discovery as discovery
@@ -58,6 +58,18 @@ def dropbox_auth(request):
         print '*'*200
         return HttpResponseRedirect(url)
 
+
+def setup_destination_folder(client, bucket_name):
+	cccb_download_folder = '/' + settings.DROPBOX_DEFAULT_DOWNLOAD_FOLDER
+	ilab_project_id = bucket_name[len(settings.BUCKET_PREFIX):]
+	destination_folder = os.path.join(cccb_download_folder, ilab_project_id)
+	try:
+		files = client.files_list_folder(destination_folder)
+	except dropbox.exceptions.ApiError as ex:
+		client.files_create_folder(destination_folder, autorename=True)
+	return destination_folder
+
+
 def dropbox_callback(request):
 	print 'Dropbox request received: %s' % request.GET
 	parser = httplib2.Http()
@@ -82,7 +94,13 @@ def dropbox_callback(request):
 	token = c['access_token']
 	print 'DROPBOX_TOKEN=%s' % token
 	ft = request.session.get('files_to_transfer', None)
-	#ft = ['https://storage.cloud.google.com/cccb-app-service-2-062217-192238/uploads/YX22_R1.fastq.gz', 'https://storage.cloud.google.com/cccb-app-service-2-062217-192238/uploads/YX23_R1.fastq.gz', 'https://storage.cloud.google.com/cccb-app-service-2-062217-192238/uploads/YX23_R2.fastq.gz']
+
+	# get any existing transfers by this user:
+	existing_transfer_masters = DropboxTransferMaster.objects.filter(owner=request.user)
+	ongoing_transfers = []
+	for t in existing_transfer_masters:
+		ongoing_transfers.extend([x.source for x in DropboxFileTransfer.objects.filter(master=t)])
+
 	if ft:
 		master = DropboxTransferMaster(start_time = datetime.datetime.now(), owner = request.user)
 		master.save()
@@ -103,8 +121,29 @@ def dropbox_callback(request):
 		running_total = 0
 		transferred_file_list = []
 		untransferred_file_list = []
+		previously_completed_transfer_file_list = []
+		ongoing_transfer_list = []
 		at_least_one_transfer = False
 		for i,f in enumerate(ft):
+			# we can block the user from requesting downloads via the UI, but if that is stale, we need
+			# to check on the backend.  Need to check that the file has not already been transferred, AND that 
+			# it's not currently going.  A double-click seems very likely 
+
+			# check that not already downloaded
+			completed_resource_downloads = ResourceDownload.objects.filter(downloader=request.user)
+			completed_download_urls = [x.resource.public_link for x in completed_resource_downloads]
+			if f in completed_download_urls:
+				print 'was already completed'
+				print completed_download_urls
+				previously_completed_transfer_file_list.append(f)
+				continue
+
+			# check that not ongoing:
+			if f in ongoing_transfers:
+				print 'is ongoing'
+				ongoing_transfer_list.append(f)
+				continue
+
 			filepath = f[len(settings.PUBLIC_STORAGE_ROOT):]
 			bucket_name = filepath.split('/')[0]
 			object_path = '/'.join(filepath.split('/')[1:])
@@ -114,9 +153,10 @@ def dropbox_callback(request):
 			running_total += size_in_bytes
 			if running_total < space_remaining_in_bytes:
 				at_least_one_transfer = True
+				destination = setup_destination_folder(dbx, bucket_name)
 				t = DropboxFileTransfer(source=f, start_time = datetime.datetime.now(), master=master)
 				t.save()
-				do_transfer(f, i, master, t, token, compute_client, size_in_bytes)
+				do_transfer(f, destination, i, master, t, token, compute_client, size_in_bytes)
 				transferred_file_list.append(f)
 			else:
 				untransferred_file_list.append(f)
@@ -126,10 +166,13 @@ def dropbox_callback(request):
 	else:
 		transferred_file_list = []
 		untransferred_file_list = []
-	return render(request, 'delivery/dropbox_transfer.html', {'transferred_files':transferred_file_list, 'skipped_files':untransferred_file_list})
+	return render(request, 'delivery/dropbox_transfer.html', {'transferred_files':transferred_file_list, \
+                                                                  'skipped_files':untransferred_file_list, \
+                                                                  'previously_completed_transfer_file_list':previously_completed_transfer_file_list, \
+                                                                   'ongoing_transfer_list':ongoing_transfer_list})
 
 
-def do_transfer(file_source, transfer_idx, master, transfer, token, compute_client, size_in_bytes):
+def do_transfer(file_source, dropbox_destination_folderpath, transfer_idx, master, transfer, token, compute_client, size_in_bytes):
 	"""
 	file_source is the https:// link to the file
 	transfer_idx is an integer.  This helps isn potentially avoiding conflicts with the time-stamped machine names
@@ -164,6 +207,7 @@ def do_transfer(file_source, transfer_idx, master, transfer, token, compute_clie
 	config_params['dropbox_token'] = token
 	config_params['email_utils'] = settings.EMAIL_UTILS
 	config_params['email_credentials'] = settings.GMAIL_CREDENTIALS
+	config_params['dropbox_destination_folderpath'] = dropbox_destination_folderpath
 	print 'launch instance with params: %s' % config_params
 	launch_custom_instance(compute_client, config_params)
 
@@ -181,6 +225,7 @@ def launch_custom_instance(compute, config_params):
     transfer_pk = config_params['transfer_pk']
     file_source = config_params['file_source']
     dropbox_token = config_params['dropbox_token']
+    dropbox_destination_folderpath = config_params['dropbox_destination_folderpath']
     token = settings.TOKEN
     enc_key = settings.ENCRYPTION_KEY
     email_utils = os.path.join(config_params['startup_bucket'], config_params['email_utils'])
@@ -276,6 +321,10 @@ def launch_custom_instance(compute, config_params):
               'key':'email_credentials',
               'value': email_credentials
             },
+            {
+              'key':'dropbox_destination_folderpath',
+              'value': dropbox_destination_folderpath
+            },
           ]
         }
     }
@@ -285,6 +334,7 @@ def launch_custom_instance(compute, config_params):
         body=config).execute()
 
 
+@csrf_exempt
 def dropbox_transfer_complete(request):
 	print 'received request from dropbox worker completion'
 	print request.POST
@@ -298,19 +348,58 @@ def dropbox_transfer_complete(request):
 			print 'token matched'
 			master_pk = int(request.POST.get('masterPK', ''))
 			transfer_pk = int(request.POST.get('transferPK', ''))
+			transfer_error = int(request.POST.get('error', 0))
+			print 'go look for master_pk=%d, transfer_pk=%d' % (master_pk, transfer_pk)
 			try:
+				master = DropboxTransferMaster.objects.get(pk = master_pk)
 				transfer = DropboxFileTransfer.objects.get(pk=transfer_pk)
 				transfer.is_complete = True
+				if transfer_error == 1:
+					transfer.was_success = False
+				else:
+					transfer.was_success = True
+
+					# register that file has been transferred to block multiple downloads
+					source = transfer.source # the https link
+					resource_list = Resource.objects.filter(public_link=source)
+					if len(resource_list) == 1:
+						rd = ResourceDownload(resource=resource_list[0], downloader=master.owner, download_date=datetime.datetime.now())
+						rd.save()
+					else:
+						print 'Problem!  Got a resource list that was not of length=1.'
+						print resource_list
+
 				transfer.save()
-				master = DropboxTransferMaster.objects.get(pk = master_pk)
+
 				all_transfers = master.dropboxfiletransfer_set.all()
 				if all([x.is_complete for x in all_transfers]):
-					print 'delete transfer master'
-					li_string = ''.join(['<li>%s</li>' % os.path.basename(x.source) for x in all_transfers])
-					msg = "<html><body>Your file transfer to Dropbox has completed!  The following files should now be in your Dropbox:<ul>%s</ul></body></html>" % li_string
-					# note that the email has to be nested in a list
-					print 'will send msg: %s\n to: %s' % (msg,master.owner.email)
-					email_utils.send_email(os.path.join(settings.BASE_DIR, settings.GMAIL_CREDENTIALS), msg, [master.owner.email,], '[CCCB] Dropbox transfer complete')
+
+					# all transfers done, but not necessarily successful.
+					if all([x.was_success for x in all_transfers]):
+						print 'delete transfer master'
+						li_string = ''.join(['<li>%s</li>' % os.path.basename(x.source) for x in all_transfers])
+						msg = "<html><body>Your file transfer to Dropbox has completed!  The following files should now be in your Dropbox:<ul>%s</ul></body></html>" % li_string
+						# note that the email has to be nested in a list
+						email_subject = '[CCCB] Dropbox transfer complete'
+						print 'will send msg: %s\n to: %s' % (msg,master.owner.email)
+					else: # some failed
+						successful_transfers = [x for x in all_transfers if x.was_success]
+						failed_transfers = [x for x in all_transfers if not x.was_success]
+						success_li_string = ''.join(['<li>%s</li>' % os.path.basename(x.source) for x in successful_transfers])
+						failed_li_string = ''.join(['<li>%s</li>' % os.path.basename(x.source) for x in failed_transfers])
+						msg = """<html>
+							<body>Your file transfer to Dropbox has experienced an issue."""
+						if len(successful_transfers) > 0:
+							msg += """The following files were successfully transferred and should now be in your Dropbox:
+								<ul>%s</ul>""" % success_li_string
+						if len(failed_transfers) > 0:
+							msg += """The following transfers failed and you may try again.  The CCCB has also received an error message.
+								<ul>%s</ul>""" % failed_li_string
+						# note that the email has to be nested in a list
+						msg += "</body></html>"
+						print 'will send msg: %s\n to: %s' % (msg,master.owner.email)
+						email_subject = '[CCCB] Problem with Dropbox transfer'
+					email_utils.send_email(os.path.join(settings.BASE_DIR, settings.GMAIL_CREDENTIALS), msg, [master.owner.email,], email_subject)
 					master.delete()
 				else:
 					print 'wait for other transfers to complete'
