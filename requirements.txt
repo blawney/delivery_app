@@ -44,8 +44,10 @@ google-resumable-media==0.2.1
 googleapis-common-protos==1.5.2
 grpc-google-iam-v1==0.11.1
 grpcio==1.4.0
+gunicorn
 httplib2==0.10.3
 idna==2.5
+Jinja2
 MySQL-python==1.2.5
 oauth2client==3.0.0
 packaging==16.8
