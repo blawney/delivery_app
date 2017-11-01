@@ -1,0 +1,31 @@
+/* CSS used here will be applied after bootstrap.css */
+body { 
+ background: url('../images/article_blur.jpeg') no-repeat center center fixed;
+ -webkit-background-size: cover;
+ -moz-background-size: cover;
+ -o-background-size: cover;
+ background-size: cover;
+}
+.panel-default {
+ opacity: 0.9;
+ margin-top:80px;
+}
+.form-group.last {
+ margin-bottom:0px;
+}
+#first-time-user{
+        margin-top: 20px;
+}
+.wide-button{
+    width: 90%;
+}
+.errorlist{
+    list-style-type: none;
+    color: red;
+    margin: 0px;
+    padding: 0px;
+    padding-top: 10px;
+}
+.spacer-div{
+height:20px;
+}

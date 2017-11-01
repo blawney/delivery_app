@@ -101,6 +101,11 @@ def dropbox_callback(request):
 	for t in existing_transfer_masters:
 		ongoing_transfers.extend([x.source for x in DropboxFileTransfer.objects.filter(master=t)])
 
+	transferred_file_list = []
+	untransferred_file_list = []
+	previously_completed_transfer_file_list = []
+	ongoing_transfer_list = []
+
 	if ft:
 		master = DropboxTransferMaster(start_time = datetime.datetime.now(), owner = request.user)
 		master.save()
@@ -119,10 +124,6 @@ def dropbox_callback(request):
 			space_allocation_in_bytes = space_usage.allocation.get_individual().allocated
 			space_remaining_in_bytes = space_allocation_in_bytes - used_in_bytes
 		running_total = 0
-		transferred_file_list = []
-		untransferred_file_list = []
-		previously_completed_transfer_file_list = []
-		ongoing_transfer_list = []
 		at_least_one_transfer = False
 		for i,f in enumerate(ft):
 			# we can block the user from requesting downloads via the UI, but if that is stale, we need

@@ -157,8 +157,10 @@ def update_db(request):
 					print item
 					return HttpResponse('', status=404)
 				try:
-					# if it exists already we do nothing
+					# if it exists already we update the upload date
 					resource = Resource.objects.get(bucket = bucket, basename = item['basename'])
+					resource.upload_date = datetime.datetime.now()
+					resource.save()
 				except ObjectDoesNotExist:
 					resource = Resource(basename=item['basename'],
 							bucket = bucket,
