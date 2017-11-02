@@ -96,7 +96,7 @@ function getCookie(name) {
 			xhr.onreadystatechange = function() {
 				if (xhr.readyState === 4) {
 					if (xhr.status === 200) {
-						window.open("https://cccb-delivery.tm4.org/dbx/", "newWindow", "width=800,height=600");
+		                                window.open("https://"+ window.location.hostname + (window.location.port ? ':' + window.location.port: '')+ "/dbx/", "newWindow", "width=800,height=600");
 					}
 				}
 			}

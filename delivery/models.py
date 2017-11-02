@@ -16,6 +16,10 @@ class Bucket(models.Model):
 class ResourceType(models.Model):
 	display_name = models.CharField(max_length=200)
 	filename_suffix = models.CharField(max_length=200)
+
+	class Meta:
+		unique_together = (('display_name','filename_suffix'),)
+
 	def __str__(self):
 		return self.display_name
 
@@ -26,6 +30,9 @@ class Resource(models.Model):
 	public_link = models.CharField(max_length=1000)
 	resource_type = models.ForeignKey(ResourceType)
 	upload_date = models.DateTimeField(blank=True, null=True)
+
+	class Meta:
+		unique_together = (('bucket', 'basename'),)
 
 	def __str__(self):
 		return '%s(%s)' % (self.basename, self.bucket.name)
