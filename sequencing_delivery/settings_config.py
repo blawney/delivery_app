@@ -146,6 +146,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 STORAGE_API_URI = 'https://storage.googleapis.com'
+static_files_bucket = config_parser.get(environment, 'static_files_bucket')
 STATIC_URL = '%s/%s/static/' % (STORAGE_API_URI, static_files_bucket)
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = [os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')]
