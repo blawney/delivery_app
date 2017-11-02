@@ -217,7 +217,7 @@ def launch_custom_instance(compute, config_params):
     now = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     instance_name = 'dropbox-transfer-%s-%s' % (now, config_params['transfer_idx'])
 
-    source_disk_image = 'projects/%s/global/images/%s' % (config_params['google_project'], config_params['image_name'])
+    source_disk_image = config_params['image_name']
     disk_size_in_gb = config_params['disk_size_in_gb']
     machine_type = "zones/%s/machineTypes/%s" % (config_params['default_zone'], config_params['machine_type'])
     startup_script_url = config_params['gs_prefix'] + os.path.join(config_params['startup_bucket'], config_params['startup_script']) 
