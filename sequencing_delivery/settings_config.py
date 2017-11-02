@@ -210,7 +210,12 @@ EMAIL_UTILS = 'email_utils.py'
 CCCB_EMAIL_CSV = config_parser.get(environment, 'cccb_email_csv') # emails to let CCCB staff know about problems:
 CCCB_GROUP_EMAIL = config_parser.get(environment, 'cccb_group_email')
 
-
+#Celery settings:
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
 
 
 
