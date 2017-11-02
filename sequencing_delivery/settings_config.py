@@ -145,8 +145,8 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
-
-STATIC_URL = '/static/'
+STORAGE_API_URI = 'https://storage.googleapis.com'
+STATIC_URL = '%s/%s/static/' % (STORAGE_API_URI, static_files_bucket)
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = [os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')]
 
@@ -155,12 +155,15 @@ LOGIN_REDIRECT_URL = '/explorer/'
 SITE_ID = 1
 
 # the base of our address:
-HOST = '%s://%s' % (config_parser.get(environment, 'protocol'), config_parser.get(environment, 'domain'))
+development_port = os.getenv('DEVPORT')
+if development_port is None:
+        HOST = '%s://%s' % (config_parser.get(environment, 'protocol'), config_parser.get(environment, 'domain'))
+else:
+        HOST = '%s://%s:%s' % (config_parser.get(environment, 'protocol'), config_parser.get(environment, 'domain'), development_port)
 
 # the name of the directory where we hold the credentials:
 CREDENTIAL_DIR = os.path.join(BASE_DIR, 'credentials')
 
-STORAGE_API_URI = 'https://storage.googleapis.com'
 
 # some settings related to authenticating with google:
 GOOGLE_AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth'
