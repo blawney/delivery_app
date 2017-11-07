@@ -15,7 +15,7 @@ import django
 django.setup()
 from django.conf import settings
 from django.db.utils import IntegrityError
-from delivery.models import Bucket, ResourceType, Resource
+from delivery.models import Bucket, Resource
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from google.cloud import storage
@@ -39,18 +39,6 @@ print bucket
 bucket.owners.add(user)
 bucket.save()
 
-resource_types = {
-	'FastQ Sequence Files':'fastq.gz',\
-	'FastQC Reports':'zip',\
-}
-for title, suffix in resource_types.items():
-	try:
-		r = ResourceType(display_name=title, filename_suffix=suffix)
-		r.save()
-	except IntegrityError:
-		pass
-all_resource_types = ResourceType.objects.all()
-
 # list the bucket to ensure that everything is consistent:
 storage_client = storage.Client()
 google_bucket = storage_client.get_bucket(bucket_name)
@@ -64,21 +52,27 @@ for item in all_contents:
 	entity.grant_read()
 	acl.save()
 
+# normally we supply the Resource "title" when we update, so make some up here
+resource_types = {
+	'FastQ Sequence Files':'fastq.gz',\
+	'FastQC Reports':'zip'
+}
 for item in all_contents:
 	print 'Add resource: %s' % item.name
 	public_link = settings.LINK_ROOT % (google_bucket.name, item.name)
-	this_resource_type = None
-	for rt in all_resource_types:
-		if os.path.basename(item.name)[-len(rt.filename_suffix):] == rt.filename_suffix:
-			this_resource_type = rt
+	resource_title = ''
+	for title, suffix in resource_types.items():
+		if os.path.basename(item.name)[-len(suffix):] == suffix:
+			resource_title = title
 			break
 	try:
 		resource = Resource.objects.get(bucket = bucket, basename =os.path.basename(item.name))
+		resource.resource_title = resource_title
 		resource.upload_date = datetime.datetime.now()
 	except ObjectDoesNotExist:
 		resource = Resource(basename=os.path.basename(item.name), \
 			bucket = bucket, \
 			public_link = public_link, \
-			resource_type = this_resource_type, \
+			resource_title = resource_title, \
 			upload_date = datetime.datetime.now())
 	resource.save()

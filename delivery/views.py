@@ -13,39 +13,46 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-from models import Bucket, ResourceType, Resource, ResourceDownload
+from models import Bucket, Resource, ResourceDownload
 
 EXPIRED_LINK_MARKER = '#'
 
 @login_required
 def explorer(request):
     user = request.user
-    resource_types = ResourceType.objects.all()
-    #users_buckets = Bucket.objects.filter(owner=user)
+
     user_buckets = user.bucket_set.all()
     all_links = {}
     bucket_dates = [] # used for ordering in the UI
+    print user_buckets
     for ub in user_buckets:
         bucket_name = ub.name[len(settings.BUCKET_PREFIX):].upper()
         d = {}
         the_date = None
-        for rt in resource_types:
-            resource_set = Resource.objects.filter(resource_type = rt, bucket = ub)
-            if len(resource_set) > 0:
-                last_upload_date = sorted([x.upload_date for x in resource_set])[-1]
-                if the_date is None or last_upload_date > the_date:
-                    date_string = last_upload_date.strftime('%B %d, %Y')
-                    the_date = last_upload_date
-                sorted_files_dict = collections.OrderedDict()
-                for rr in sorted(resource_set, key=lambda x: x.basename):
-                    sorted_files_dict[os.path.basename(rr.basename)] = rr.public_link
-                print '*'*10
-                print 'sorted_files_dict'
-                print sorted_files_dict
-                print '*'*10
-                d[rt.display_name] = sorted_files_dict
-                #d[rt.display_name] = {os.path.basename(x.basename):x.public_link for x in resource_set}
-        if len(sorted_files_dict.keys()) > 0:
+        all_resources = Resource.objects.filter(bucket=ub)
+	print 'In bucket %s, there were %s resources' % (bucket_name, len(all_resources))
+        if len(all_resources) > 0:
+       	    all_resource_types = set([x.resource_title for x in all_resources])
+            last_upload_date = sorted([x.upload_date for x in all_resources])[-1]
+            if the_date is None or last_upload_date > the_date:
+                date_string = last_upload_date.strftime('%B %d, %Y')
+                the_date = last_upload_date
+
+            # make a dictionary that maps the resource title to a list of Resource objects
+            temp_dict = {}
+            for rr in all_resources:
+                if rr.resource_title in temp_dict:
+                    temp_dict[rr.resource_title].append(rr)
+                else:
+                    temp_dict[rr.resource_title] = [rr,]
+
+            # sort the dictionary by name for the display
+            d = {rt:collections.OrderedDict() for rt in all_resource_types} # a dictionary mapping the resource title to another dictionary
+            for key, rs in temp_dict.items():
+                rs = sorted(rs, key=lambda x: x.basename)
+                for rss in rs:
+                    d[key][os.path.basename(rss.basename)] = rss.public_link
+
             bucket_string = '%s (Last modified %s)' % (bucket_name, date_string)
             bucket_dates.append((the_date,bucket_string))
             all_links[bucket_string] = d

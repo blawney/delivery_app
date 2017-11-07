@@ -3,15 +3,11 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from models import Bucket, Resource, ResourceType, DropboxTransferMaster, DropboxFileTransfer, ResourceDownload
-
-class ResourceTypeAdmin(admin.ModelAdmin):
-	list_display = ('display_name','filename_suffix')
-	list_editable = ('filename_suffix',)
+from models import Bucket, Resource, DropboxTransferMaster, DropboxFileTransfer, ResourceDownload
 
 class ResourceAdmin(admin.ModelAdmin):
-	list_display = ('bucket', 'basename','public_link','resource_type', 'upload_date')
-	list_editable = ('resource_type',)
+	list_display = ('bucket', 'basename','public_link','resource_title', 'upload_date')
+	list_editable = ('resource_title',)
 
 class BucketAdmin(admin.ModelAdmin):
 	list_display = ('name',)
@@ -30,6 +26,5 @@ class ResourceDownloadAdmin(admin.ModelAdmin):
 admin.site.register(Bucket, BucketAdmin)
 admin.site.register(Resource, ResourceAdmin)
 admin.site.register(ResourceDownload, ResourceDownloadAdmin)
-admin.site.register(ResourceType, ResourceTypeAdmin)
 admin.site.register(DropboxTransferMaster, DropboxTransferMasterAdmin)
 admin.site.register(DropboxFileTransfer, DropboxFileTransferAdmin)

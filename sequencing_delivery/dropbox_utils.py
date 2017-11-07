@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.abspath('..'))
 import email_utils
 sys.path.append(os.path.abspath('../delivery'))
-from delivery.models import Bucket, Resource, ResourceType, DropboxTransferMaster, DropboxFileTransfer, ResourceDownload
+from delivery.models import Bucket, Resource, DropboxTransferMaster, DropboxFileTransfer, ResourceDownload
 
 from google.cloud import storage
 import googleapiclient.discovery as discovery

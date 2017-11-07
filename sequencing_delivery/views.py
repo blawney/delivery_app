@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.abspath('..'))
 import email_utils
 sys.path.append(os.path.abspath('../delivery'))
-from delivery.models import Bucket, Resource, ResourceType, DropboxTransferMaster, DropboxFileTransfer
+from delivery.models import Bucket, Resource, DropboxTransferMaster, DropboxFileTransfer
 
 from google.cloud import storage
 import googleapiclient.discovery as discovery
@@ -118,8 +118,6 @@ def update_db(request):
 	if decrypted_token == expected_token:
 
 		print 'token looks good'
-		all_resource_types = ResourceType.objects.all()
-
 
 		uploads = request.POST['uploads']
 		ddd = json.loads(uploads)
@@ -128,6 +126,7 @@ def update_db(request):
 		print ddd
 		print 'Y'*100
 		for item in ddd['uploaded_objects']:
+			print 'try to add: %s' % item
 			for email in item['owners']:
 				try:
 					user = User.objects.get(email=email)
@@ -137,35 +136,30 @@ def update_db(request):
 					user.last_name = ''
 					user.save()
 
-				# see if the bucket exists:
+				# see if the bucket exists.  If not, create one
 				try:
 					bucket = Bucket.objects.get(name=item['bucket_name'])
+					print 'Bucket existed'
 				except ObjectDoesNotExist:
+					print 'Bucket did not exist.  Create one'
 					bucket = Bucket(name=item['bucket_name'])
 					bucket.save()
 				bucket.owners.add(user)
 				public_link = settings.LINK_ROOT % (bucket.name,item['basename'])
 
-				# determine the type of file by the suffix
-				this_resource_type = None
-				for rt in all_resource_types:
-					if item['basename'][-len(rt.filename_suffix):] == rt.filename_suffix:
-						this_resource_type = rt
-						break
-				if this_resource_type is None:
-					print 'resource type was none'
-					print item
-					return HttpResponse('', status=404)
 				try:
 					# if it exists already we update the upload date
 					resource = Resource.objects.get(bucket = bucket, basename = item['basename'])
+					print 'Resource was already there'
 					resource.upload_date = datetime.datetime.now()
+					resource.resource_title = item['resource_title']
 					resource.save()
 				except ObjectDoesNotExist:
+					print 'Resource DID NOT exist.'
 					resource = Resource(basename=item['basename'],
 							bucket = bucket,
 							public_link = public_link,
-							resource_type = this_resource_type,
+							resource_title = item['resource_title'],
 							upload_date = datetime.datetime.now())
 					resource.save()
 		return HttpResponse('Database updated.')
