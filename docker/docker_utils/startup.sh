@@ -12,6 +12,12 @@ if [ $1 == "dev" ]; then
 else
   echo "Setting up production environment"
   export GOOGLE_PROJECT=cccb-data-delivery
+  if [ -z $4 ]; then
+    echo "No port was specified for production port"
+  else
+    export PORT=$4
+    export DEVPORT=$PORT
+  fi
 fi
 
 
@@ -105,7 +111,7 @@ else
   export GOOGLE_PROJECT=cccb-data-delivery
   LOG="/var/log/gunicorn/gunicorn.log"
   touch $LOG
-  SOCKET_PATH="unix:/host_tmp/gunicorn.sock"
+  SOCKET_PATH="unix:/host_tmp/gunicorn"$PORT".sock"  
   exec gunicorn sequencing_delivery.wsgi:application \
 	--bind $SOCKET_PATH \
 	--workers 3 \
