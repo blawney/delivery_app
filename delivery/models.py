@@ -21,6 +21,7 @@ class Resource(models.Model):
 	public_link = models.CharField(max_length=1000)
 	resource_title = models.CharField(max_length=500)
 	upload_date = models.DateTimeField(blank=True, null=True)
+	is_active = models.BooleanField(default=True)
 
 	class Meta:
 		unique_together = (('bucket', 'basename'),)

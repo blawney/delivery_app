@@ -30,6 +30,7 @@ def explorer(request):
         d = {}
         the_date = None
         all_resources = Resource.objects.filter(bucket=ub)
+        all_resources = [x for x in all_resources if x.is_active]
 	print 'In bucket %s, there were %s resources' % (bucket_name, len(all_resources))
         if len(all_resources) > 0:
        	    all_resource_types = set([x.resource_title for x in all_resources])
@@ -85,6 +86,7 @@ def explorer(request):
                 'tree':json.dumps(tree) if tree else tree,
                 'error_msg': error_msg
                 })
+
 
 def check_not_downloaded(sorted_dict, user):
 	"""
