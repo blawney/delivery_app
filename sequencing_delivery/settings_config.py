@@ -223,4 +223,4 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 # how many days to keep the data:
 RETENTION_PERIOD = 30
-
+ALERT_DAYS = [14,7,3]
