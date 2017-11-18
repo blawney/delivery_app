@@ -1,6 +1,7 @@
 from celery.task.schedules import crontab
 from celery.decorators import periodic_task
 import email_utils
+from models import *
 
 import datetime
 
@@ -13,13 +14,16 @@ from django.conf import settings
 def cleanup():
 	print 'In cleanup'
 
-	today = datetime.datetime.today()
-
 	# query db for all resources:
-	all_resources = Resources.objects.all()
+	all_resources = Resource.objects.all()
+
+	# to do a 'date subtraction' below, need the time zone info for the dates in the database
+	# extract that from the first resource returned for ease.  
+	tz_info = all_resources[0].upload_date.tzinfo
+	now = datetime.datetime.now(tz_info)
 
 	# get those that are expired:
-	expired_resources = [x for x in all_resources if (today-x.upload_date).days >= settings.RETENTION_PERIOD]
+	expired_resources = [x for x in all_resources if (now-x.upload_date).days >= settings.RETENTION_PERIOD]
 	
 	# get the buckets associated with those expired resources:
 	bucket_to_resource_map = {}
@@ -33,8 +37,8 @@ def cleanup():
 	bucket_set = bucket_to_resource_map.keys()
 	owner_to_bucket_mapping = {}
 	for b in bucket_set:
-		for owner in b.owners:
-			if owner in owner_to_bucket_mapping:
+		for owner in b.owners.all():
+			if owner.email in owner_to_bucket_mapping:
 				owner_to_bucket_mapping[owner.email].append(b)
 			else:
 				owner_to_bucket_mapping[owner.email] = [b,]
