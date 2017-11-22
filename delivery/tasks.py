@@ -88,11 +88,13 @@ def cleanup():
 				#TODO actually send email!
 
 	# create a set of commands to do removal:
-	gsutil_rm_cmd_template = 'gsutil rm %s # uploaded %s'
+	gsutil_rm_cmd_template = 'gsutil rm %s #%s;uploaded %s'
 	removal_commands = []
 	for r in expired_resources:
+		non_cccb_owners = [x for x in r.bucket.owners.all() if not x.email.lower() in cccb_owners]
+		non_cccb_owner_str = ','.join(non_cccb_owners)
 		l = settings.GOOGLE_BUCKET_PREFIX + r.public_link[len(settings.PUBLIC_STORAGE_ROOT):]
-		removal_commands.append(gsutil_rm_cmd_template % (l, r.upload_date.strftime('%B %d, %Y')))
+		removal_commands.append(gsutil_rm_cmd_template % (l, non_cccb_owner_str, r.upload_date.strftime('%B %d, %Y')))
 
 	email_utils.send_email(
 		settings.GMAIL_CREDENTIALS, \
