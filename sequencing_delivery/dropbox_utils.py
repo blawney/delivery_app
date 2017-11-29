@@ -207,7 +207,7 @@ def do_transfer(file_source, dropbox_destination_folderpath, transfer_idx, maste
 	config_params['file_source'] = file_path
 	config_params['dropbox_token'] = token
 	config_params['email_utils'] = settings.EMAIL_UTILS
-	config_params['email_credentials'] = settings.GMAIL_CREDENTIALS
+	config_params['email_credentials'] = settings.GMAIL_CREDENTIALS_CLOUD
 	config_params['dropbox_destination_folderpath'] = dropbox_destination_folderpath
 	print 'launch instance with params: %s' % config_params
 	launch_custom_instance(compute_client, config_params)
