@@ -36,7 +36,7 @@ RUN pip install gsutil
 RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcl \
     && bash /tmp/gcl --install-dir=/root/gcloud --disable-prompts
 ARG gcloud_bin=/root/gcloud/google-cloud-sdk/bin
-ENV PATH "$PATH:"${gcloud_bin}
+ENV PATH ${gcloud_bin}":$PATH"
 ENV GCLOUD=${gcloud_bin}/gcloud
 
 # celery/redis related items
