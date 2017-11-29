@@ -99,6 +99,6 @@ def cleanup():
 	email_utils.send_email(
 		settings.GMAIL_CREDENTIALS, \
 		'\n'.join(removal_commands), \
-		 ['brian_lawney@mail.dfci.harvard.edu', ], \
+		 [settings.CCCB_GROUP_EMAIL, ], \
 		'[CCCBSEQ] Cleanup' \
 	)
