@@ -230,7 +230,7 @@ def launch_custom_instance(compute, config_params):
     token = settings.TOKEN
     enc_key = settings.ENCRYPTION_KEY
     email_utils = os.path.join(config_params['startup_bucket'], config_params['email_utils'])
-    email_credentials = os.path.join(config_params['startup_bucket'], config_params['email_credentials'])
+    email_credentials = config_params['email_credentials']
 
     config = {
         'name': instance_name,
