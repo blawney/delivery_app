@@ -236,7 +236,9 @@ def dropbox_transfer_complete(request):
 							msg += """The following files were successfully transferred and should now be in your Dropbox:
 								<ul>%s</ul>""" % success_li_string
 						if len(failed_transfers) > 0:
-							msg += """The following transfers failed and you may try again.  The CCCB has also received an error message.
+							msg += """The following transfers failed and should be restarted.  
+								Sometimes an unexpected error occurs in the connection with Dropbox and it is best to refresh and try again.  The CCCB has also received an error message
+								regarding the transfer(s).
 								<ul>%s</ul>""" % failed_li_string
 						# note that the email has to be nested in a list
 						msg += "</body></html>"
