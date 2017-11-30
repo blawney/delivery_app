@@ -31,6 +31,8 @@ import base64
 import dropbox 
 from dropbox import DropboxOAuth2FlowNoRedirect
 
+from . import tasks
+
 @login_required
 def register_files_to_transfer(request):
 	"""
@@ -125,6 +127,7 @@ def dropbox_callback(request):
 			space_remaining_in_bytes = space_allocation_in_bytes - used_in_bytes
 		running_total = 0
 		at_least_one_transfer = False
+		transfer_dict = {}
 		for i,f in enumerate(ft):
 			# we can block the user from requesting downloads via the UI, but if that is stale, we need
 			# to check on the backend.  Need to check that the file has not already been transferred, AND that 
@@ -155,15 +158,16 @@ def dropbox_callback(request):
 			if running_total < space_remaining_in_bytes:
 				at_least_one_transfer = True
 				destination = setup_destination_folder(dbx, bucket_name)
-				t = DropboxFileTransfer(source=f, start_time = datetime.datetime.now(), master=master)
-				t.save()
-				do_transfer(f, destination, i, master, t, token, compute_client, size_in_bytes)
+				transfer_dict[f] = (destination, size_in_bytes)
 				transferred_file_list.append(f)
 			else:
 				untransferred_file_list.append(f)
 		# in case we do not actually transfer any files, don't want the 'master' objects sticking around in the database
 		if not at_least_one_transfer:
-			master.delete() 
+			master.delete()
+		if len(transfer_dict.keys()) > 0:
+			tasks.start_transfers.delay(transfer_dict, master.pk, token)
+
 	else:
 		transferred_file_list = []
 		untransferred_file_list = []
@@ -171,168 +175,6 @@ def dropbox_callback(request):
                                                                   'skipped_files':untransferred_file_list, \
                                                                   'previously_completed_transfer_file_list':previously_completed_transfer_file_list, \
                                                                    'ongoing_transfer_list':ongoing_transfer_list})
-
-
-def do_transfer(file_source, dropbox_destination_folderpath, transfer_idx, master, transfer, token, compute_client, size_in_bytes):
-	"""
-	file_source is the https:// link to the file
-	transfer_idx is an integer.  This helps isn potentially avoiding conflicts with the time-stamped machine names
-	master is a DropboxTransferMaster object
-	token is a auth token for dropbox
-	"""
-	#storage_client = storage.Client()
-	prefix = settings.PUBLIC_STORAGE_ROOT
-	file_path = file_source[len(prefix):]
-	#bucket_name = file_path.split('/')[0]
-	#object_path = '/'.join(file_path.split('/')[1:])
-	#print bucket_name
-	#bucket = storage_client.get_bucket(bucket_name)
-	#b = bucket.get_blob(object_path)
-	size_in_gb = size_in_bytes/1e9
-	min_size = settings.DROPBOX_TRANSFER_MIN_DISK_SIZE
-	buffer = 5
-	config_params = {}
-	config_params['google_project'] = settings.GOOGLE_PROJECT
-	config_params['image_name'] = settings.DROPBOX_TRANSFER_IMAGE
-	config_params['transfer_idx'] = transfer_idx
-	config_params['disk_size_in_gb'] = min_size if (size_in_gb + buffer) <= min_size else int(buffer + size_in_gb)
-	config_params['default_zone'] = settings.GOOGLE_DEFAULT_ZONE
-	config_params['machine_type'] = 'g1-small'
-	config_params['gs_prefix'] = settings.GOOGLE_BUCKET_PREFIX
-	config_params['startup_bucket'] = settings.STARTUP_SCRIPT_BUCKET
-	config_params['startup_script'] = 'dropbox_startup_script.py'
-	config_params['callback_url'] = '%s/%s' % (settings.HOST, settings.DROPBOX_COMPLETE_CALLBACK)
-	config_params['master_pk'] = master.pk
-	config_params['transfer_pk'] = transfer.pk
-	config_params['file_source'] = file_path
-	config_params['dropbox_token'] = token
-	config_params['email_utils'] = settings.EMAIL_UTILS
-	config_params['email_credentials'] = settings.GMAIL_CREDENTIALS_CLOUD
-	config_params['dropbox_destination_folderpath'] = dropbox_destination_folderpath
-	print 'launch instance with params: %s' % config_params
-	launch_custom_instance(compute_client, config_params)
-
-def launch_custom_instance(compute, config_params):
-
-    now = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    instance_name = 'dropbox-transfer-%s-%s' % (now, config_params['transfer_idx'])
-
-    source_disk_image = config_params['image_name']
-    disk_size_in_gb = config_params['disk_size_in_gb']
-    machine_type = "zones/%s/machineTypes/%s" % (config_params['default_zone'], config_params['machine_type'])
-    startup_script_url = config_params['gs_prefix'] + os.path.join(config_params['startup_bucket'], config_params['startup_script']) 
-    callback_url = config_params['callback_url']
-    master_pk = config_params['master_pk']
-    transfer_pk = config_params['transfer_pk']
-    file_source = config_params['file_source']
-    dropbox_token = config_params['dropbox_token']
-    dropbox_destination_folderpath = config_params['dropbox_destination_folderpath']
-    token = settings.TOKEN
-    enc_key = settings.ENCRYPTION_KEY
-    email_utils = os.path.join(config_params['startup_bucket'], config_params['email_utils'])
-    email_credentials = config_params['email_credentials']
-
-    config = {
-        'name': instance_name,
-        'machineType': machine_type,
-
-        # Specify the boot disk and the image to use as a source.
-        'disks': [
-            {
-                'boot': True,
-                'autoDelete': True,
-                'initializeParams': {
-                    'sourceImage': source_disk_image,
-                     "diskSizeGb": disk_size_in_gb,
-                }
-            }
-        ],
-
-        # Specify a network interface with NAT to access the public
-        # internet.
-        'networkInterfaces': [{
-            'network': 'global/networks/default',
-            'accessConfigs': [
-                {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
-            ]
-        }],
-
-        # Allow the instance to access cloud storage and logging.
-        'serviceAccounts': [{
-            'email': 'default',
-            'scopes': [
-                'https://www.googleapis.com/auth/compute',
-                'https://www.googleapis.com/auth/devstorage.full_control',
-                'https://www.googleapis.com/auth/logging.write'
-            ]
-        }],
- 
-        'metadata': {
-            'items': [{
-                # Startup script is automatically executed by the
-                # instance upon startup.
-                'key': 'startup-script-url',
-                'value': startup_script_url
-            },
-            {
-              'key':'master_pk',
-              'value': master_pk
-            },
-            {
-              'key':'transfer_pk',
-              'value': transfer_pk
-            },
-            {
-                'key':'callback_url',
-                'value': callback_url
-            },
-            {
-              'key':'dropbox_token',
-              'value':dropbox_token
-            },
-            {
-              'key':'source',
-              'value':file_source
-            },
-	    {
-              'key':'token', 
-              'value':token
-            },
-	    {
-              'key':'enc_key', 
-              'value':enc_key
-            },
-            {
-              'key':'google_project',
-              'value': config_params['google_project']
-            },
-            {
-              'key':'google_zone',
-              'value': config_params['default_zone']
-            },
-            {
-              'key':'cccb_email_csv',
-              'value': settings.CCCB_EMAIL_CSV
-            },
-            {
-              'key':'email_utils',
-              'value': email_utils
-            },
-            {
-              'key':'email_credentials',
-              'value': email_credentials
-            },
-            {
-              'key':'dropbox_destination_folderpath',
-              'value': dropbox_destination_folderpath
-            },
-          ]
-        }
-    }
-    return compute.instances().insert(
-        project=config_params['google_project'],
-        zone=config_params['default_zone'],
-        body=config).execute()
 
 
 @csrf_exempt
@@ -373,9 +215,9 @@ def dropbox_transfer_complete(request):
 				transfer.save()
 
 				all_transfers = master.dropboxfiletransfer_set.all()
-				if all([x.is_complete for x in all_transfers]):
+				if all([x.is_complete for x in all_transfers]) and master.initiated_all_transfers:
 
-					# all transfers done, but not necessarily successful.
+					# all transfers done, but not all were necessarily successful.
 					if all([x.was_success for x in all_transfers]):
 						print 'delete transfer master'
 						li_string = ''.join(['<li>%s</li>' % os.path.basename(x.source) for x in all_transfers])
@@ -403,7 +245,7 @@ def dropbox_transfer_complete(request):
 					email_utils.send_email(os.path.join(settings.BASE_DIR, settings.GMAIL_CREDENTIALS), msg, [master.owner.email,], email_subject)
 					master.delete()
 				else:
-					print 'wait for other transfers to complete'
+					print 'wait for other transfers to complete or to even begin'
 				return HttpResponse('Acknowledged.')
 			except Exception as ex:
 				print 'caught some exception: %s' % ex.message

@@ -201,6 +201,9 @@ DROPBOX_TRANSFER_IMAGE = 'projects/cccb-data-delivery/global/images/dropbox-tran
 DROPBOX_TRANSFER_MIN_DISK_SIZE = 10
 DROPBOX_COMPLETE_CALLBACK = 'dropbox-transfer-complete'
 DROPBOX_DEFAULT_DOWNLOAD_FOLDER = 'cccb_transfers'
+MAX_CONCURRENT_TRANSFERS = 20
+DROPBOX_TRANSFER_SLEEP_SECONDS = 30 # how long to sleep (in seconds) between checks to see if any transfers have completed (and hence can add a new one)
+
 
 GOOGLE_PROJECT = config_parser.get(environment, 'google_project')
 GOOGLE_DEFAULT_ZONE = config_parser.get(environment, 'google_default_zone')

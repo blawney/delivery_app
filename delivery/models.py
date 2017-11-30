@@ -42,6 +42,7 @@ class DropboxTransferMaster(models.Model):
 	owner = models.ForeignKey(User, default=None)
 	start_time = models.DateTimeField(blank=True, null=True)
 	name = models.CharField(max_length=500, default='', blank=True)
+	initiated_all_transfers = models.BooleanField(blank=False, null=False, default=False)
 
 	def __str__(self):
 		 return '%s' % self.name
