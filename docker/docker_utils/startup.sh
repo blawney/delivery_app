@@ -116,5 +116,6 @@ else
 	--bind $SOCKET_PATH \
 	--workers 3 \
 	--error-logfile $LOG \
-	--log-file $LOG
+	--log-file $LOG \
+	--capture-output
 fi
