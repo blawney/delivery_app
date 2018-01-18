@@ -56,7 +56,7 @@ def start_transfers(transfer_dict, master_pk, token):
 
 		if currently_processing_transfers < settings.MAX_CONCURRENT_TRANSFERS:
 			source_link = source_links.pop()	
-			dropbox_destination_folderpath, size_in_bytes = transfer_dict[source_link)
+			dropbox_destination_folderpath, size_in_bytes = transfer_dict[source_link]
 			transfer = DropboxFileTransfer(source=source_link, start_time = datetime.datetime.now(), master=master_obj)
 			transfer.save()
 			do_transfer(source_link, dropbox_destination_folderpath, transfer_idx, master_pk, transfer token, compute_client, size_in_bytes)
