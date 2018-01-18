@@ -31,7 +31,7 @@ import base64
 import dropbox 
 from dropbox import DropboxOAuth2FlowNoRedirect
 
-from . import tasks
+from delivery import tasks
 
 @login_required
 def register_files_to_transfer(request):
