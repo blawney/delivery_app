@@ -61,7 +61,7 @@ def start_transfers(transfer_dict, master_pk, token):
 			dropbox_destination_folderpath, size_in_bytes = transfer_dict[source_link]
 			transfer = DropboxFileTransfer(source=source_link, start_time = datetime.datetime.now(), master=master_obj)
 			transfer.save()
-			do_transfer(source_link, dropbox_destination_folderpath, transfer_idx, master_pk, transfer token, compute_client, size_in_bytes)
+			do_transfer(source_link, dropbox_destination_folderpath, transfer_idx, master_pk, transfer, token, compute_client, size_in_bytes)
 			transfer_idx += 1
 		else:
 			# the current number of transfers is at the max, so wait a bit
