@@ -27,6 +27,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from Crypto.Cipher import DES
 import base64
 
+from celery.decorators import task
+
 import dropbox 
 from dropbox import DropboxOAuth2FlowNoRedirect
 
