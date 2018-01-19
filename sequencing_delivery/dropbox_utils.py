@@ -128,31 +128,36 @@ def dropbox_callback(request):
 		running_total = 0
 		at_least_one_transfer = False
 		transfer_dict = {}
+
+		completed_resource_downloads = ResourceDownload.objects.filter(downloader=request.user)
+		completed_download_urls = [x.resource.public_link for x in completed_resource_downloads]
+
+		# we prefetch the buckets since those are costly operations.
+		potential_bucket_names = set([x[len(settings.PUBLIC_STORAGE_ROOT):].split('/')[0] for x in ft])
+		potential_buckets = {bn:storage_client.get_bucket(bn) for bn in potential_bucket_names}
 		for i,f in enumerate(ft):
 			# we can block the user from requesting downloads via the UI, but if that is stale, we need
 			# to check on the backend.  Need to check that the file has not already been transferred, AND that 
 			# it's not currently going.  A double-click seems very likely 
 
 			# check that not already downloaded
-			completed_resource_downloads = ResourceDownload.objects.filter(downloader=request.user)
-			completed_download_urls = [x.resource.public_link for x in completed_resource_downloads]
 			if f in completed_download_urls:
-				print 'was already completed'
-				print completed_download_urls
 				previously_completed_transfer_file_list.append(f)
 				continue
 
 			# check that not ongoing:
 			if f in ongoing_transfers:
-				print 'is ongoing'
 				ongoing_transfer_list.append(f)
 				continue
 
 			filepath = f[len(settings.PUBLIC_STORAGE_ROOT):]
 			bucket_name = filepath.split('/')[0]
 			object_path = '/'.join(filepath.split('/')[1:])
-			bucket = storage_client.get_bucket(bucket_name)
+			bucket = potential_buckets[bucket_name]
 			b = bucket.get_blob(object_path)
+			if b is None:
+				print 'Found a dead link.  skip'
+				continue
 			size_in_bytes = b.size
 			running_total += size_in_bytes
 			if running_total < space_remaining_in_bytes:
@@ -160,6 +165,7 @@ def dropbox_callback(request):
 				destination = setup_destination_folder(dbx, bucket_name)
 				transfer_dict[f] = (destination, size_in_bytes)
 				transferred_file_list.append(f)
+				print 'append %s to transfer list' % f
 			else:
 				untransferred_file_list.append(f)
 		# in case we do not actually transfer any files, don't want the 'master' objects sticking around in the database

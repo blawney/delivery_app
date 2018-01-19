@@ -24,14 +24,12 @@ def explorer(request):
     user_buckets = user.bucket_set.all()
     all_links = {}
     bucket_dates = [] # used for ordering in the UI
-    print user_buckets
     for ub in user_buckets:
         bucket_name = ub.name[len(settings.BUCKET_PREFIX):].upper()
         d = {}
         the_date = None
         all_resources = Resource.objects.filter(bucket=ub)
         all_resources = [x for x in all_resources if x.is_active]
-	print 'In bucket %s, there were %s resources' % (bucket_name, len(all_resources))
         if len(all_resources) > 0:
        	    all_resource_types = set([x.resource_title for x in all_resources])
             last_upload_date = sorted([x.upload_date for x in all_resources])[-1]
@@ -57,10 +55,6 @@ def explorer(request):
             bucket_string = '%s (Last modified %s)' % (bucket_name, date_string)
             bucket_dates.append((the_date,bucket_string))
             all_links[bucket_string] = d
-    print '*'*20
-    print 'all_links'
-    print all_links
-    print '*'*20
 
     # would like to order by the dates.  At the moment,bucket_dates is a list of tuples giving
     # the identifier (which is a key in the all_links dictionary) for the bucket and a datetime.
@@ -69,9 +63,6 @@ def explorer(request):
     sorted_dict = collections.OrderedDict()
     for date, key_string in sorted_ids:
        sorted_dict[key_string] = all_links[key_string] 
-    print '?'*20
-    print sorted_dict
-    print '?'*20
 
     # want to check that files were not already downloaded:
     check_not_downloaded(sorted_dict, user)
