@@ -38,7 +38,7 @@ SERVICE_ACCOUNT=$(python /startup/get_account_name.py $CRED_FILE_PATH)
 export BOTO_PATH=/root/.config/gcloud/legacy_credentials/$SERVICE_ACCOUNT/.boto
 
 # pull the various credential and config files:
-#gsutil cp $APP_CONFIG_BUCKET/sequencing_delivery.config .
+gsutil cp $APP_CONFIG_BUCKET/sequencing_delivery.config .
 export APP_CONFIG=`pwd`/sequencing_delivery.config
 
 # copy the parameterized settings file to settings.py.  For the moment this is done to 
