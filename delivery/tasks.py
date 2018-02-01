@@ -99,8 +99,7 @@ def cleanup():
 				listing_html = bucket_list_html(sdf)
 				email_text += listing_html
 				email_body = email_template % email_text
-				print 'Send email to %s:%s' % (user, email_body)
-				#TODO actually send email!
+				email_utils.send_email(settings.GMAIL_CREDENTIALS, email_body, [user,], email_subject)
 			elif int(day) <= -1:
 				# set inactive on Resource, notify of deletion
 				email_subject = '[CCCB] Data removal notification'
@@ -108,13 +107,14 @@ def cleanup():
 				listing_html = bucket_list_html(sdf)
 				email_text += listing_html
 				email_body = email_template % email_text
-				print 'Send email to %s:%s' % (user, email_body)
-				#TODO actually send email!
+				email_utils.send_email(settings.GMAIL_CREDENTIALS, email_body, [user,], email_subject)
 
 	# create a set of commands to do removal:
 	gsutil_rm_cmd_template = 'gsutil rm %s #%s;uploaded %s'
 	removal_commands = []
 	for r in expired_resources:
+		r.is_active = False
+		r.save()
 		non_cccb_owners = [x.email for x in r.bucket.owners.all() if not x.email.lower() in cccb_owners]
 		non_cccb_owner_str = ','.join(non_cccb_owners)
 		l = settings.GOOGLE_BUCKET_PREFIX + r.public_link[len(settings.PUBLIC_STORAGE_ROOT):]
