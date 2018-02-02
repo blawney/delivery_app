@@ -48,7 +48,7 @@ def bucket_list_html(sdf):
 	return bucket_listing_html
 
 @periodic_task(
-	run_every=(crontab(minute=0, hour=5)),
+	run_every=(crontab(minute=0, hour=14)),
 	name='cleanup'
 )
 def cleanup():
