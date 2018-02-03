@@ -9,6 +9,7 @@ from HTMLParser import HTMLParser
 from oauth2client.file import Storage
 from apiclient import discovery
 import httplib2
+import time
 
 class MLStripper(HTMLParser):
     def __init__(self):
@@ -27,7 +28,6 @@ def strip_tags(html):
 
 def send_email(credential_file_path, message_html, addresses, subject='Message from CCCB'):
     print 'in send email function'
-    creds = '/webapps/cccb_portal/gmail_credentials.json'
     store = Storage(credential_file_path)
     credentials = store.get()
     http = credentials.authorize(httplib2.Http())
@@ -43,4 +43,9 @@ def send_email(credential_file_path, message_html, addresses, subject='Message f
         message['From'] = formataddr((str(Header('CCCB', 'utf-8')), sender))
         message['subject'] = subject
         msg = {'raw': base64.urlsafe_b64encode(message.as_string())}
-        sent_message = service.users().messages().send(userId='me', body=msg).execute()
+	try:
+	        sent_message = service.users().messages().send(userId='me', body=msg).execute()
+	except Exception as ex:
+		print 'Failure when sending to recipient: %s' % recipient
+		print ex.message
+	time.sleep(3)
