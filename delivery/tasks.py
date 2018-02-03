@@ -218,6 +218,8 @@ def launch_custom_instance(compute, config_params):
     master_pk = config_params['master_pk']
     transfer_pk = config_params['transfer_pk']
     file_source = config_params['file_source']
+    bucket_name = file_source.split('/')[0]
+    ilab_id = bucket_name[len(settings.BUCKET_PREFIX):]
     dropbox_token = config_params['dropbox_token']
     dropbox_destination_folderpath = config_params['dropbox_destination_folderpath']
     token = settings.TOKEN
@@ -228,7 +230,10 @@ def launch_custom_instance(compute, config_params):
     config = {
         'name': instance_name,
         'machineType': machine_type,
-
+        'labels':[{
+                    'delivery':ilab_id
+                   }
+	],
         # Specify the boot disk and the image to use as a source.
         'disks': [
             {
